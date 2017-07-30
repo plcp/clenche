@@ -54,26 +54,21 @@ namespace cl
        : functor_wrapper<dispatcher<t_machine, t_functors...>, t_functors>...
     {
         using machine_type = t_machine;
+        dispatcher(machine_type& machine)
+            : machine(machine)
+        { }
+        machine_type& machine;
 
         template<class t_functor>
         using wrapper_type = functor_wrapper<
             dispatcher<machine_type, t_functors...>, t_functor>;
-
-        dispatcher(machine_type& machine)
-            : machine(machine)
-        { }
         using wrapper_type<t_functors>::operator()...;
-
-        machine_type& machine;
     };
 
     template<typename... t_functors>
     struct machine
     {
         using stack_type = stack<traits::callee<t_functors>...>;
-
-        machine()
-        { }
 
         template<typename... t_args>
         machine(t_args&&... args)
@@ -91,7 +86,6 @@ namespace cl
         void prepare(t_args&&... args)
         {
             callee<t_args...> callee(args...);
-            pending = true;
             stack = callee;
         }
 
@@ -100,7 +94,7 @@ namespace cl
             pending = false;
         }
 
-        bool pending;
+        bool pending = true;
         stack_type stack;
     };
 }
