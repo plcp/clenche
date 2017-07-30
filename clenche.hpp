@@ -26,10 +26,7 @@ namespace cl
     };
 
     template<class... t_functors>
-    struct resolver : t_functors...
-    {
-        using t_functors::operator()...;
-    };
+    struct resolver { };
 
     template<typename t_machine, typename resolver, typename stack>
     struct dispatcher;
@@ -47,7 +44,7 @@ namespace cl
         template<class t_functor, typename t_callee>
         using wrapper_type = functor_wrapper<
             dispatcher<
-                t_machine,
+                machine_type,
                 resolver<t_functors...>,
                 stack<t_callees...>>, t_functor, t_callee>;
 
