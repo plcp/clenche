@@ -67,10 +67,10 @@ namespace cl
         machine_type& machine;
     };
 
-    template<typename t_stack, typename... t_functors>
+    template<typename... t_functors>
     struct machine
     {
-        using stack_type = t_stack;
+        using stack_type = stack<traits::callee<t_functors>...>;
 
         machine()
         { }
