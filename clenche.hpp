@@ -33,13 +33,13 @@ namespace cl
         using callee = typename extract_callee<t_functor>::type;
     }
 
-    template<typename t_dispatcher, class t_functor>
-    struct functor_wrapper : t_functor
+    template<typename t_visitor, class t_functor>
+    struct wrapper : t_functor
     {
         using callee_type = traits::callee<t_functor>;
         void operator()(callee_type& callee)
         {
-            auto& machine = static_cast<t_dispatcher*>(this)->machine;
+            auto& machine = static_cast<t_visitor*>(this)->machine;
             auto fwrapped =
                 [&](auto&&... args) -> void
                 {
@@ -50,18 +50,16 @@ namespace cl
     };
 
     template<typename t_machine, class... t_functors>
-    struct dispatcher
-       : functor_wrapper<dispatcher<t_machine, t_functors...>, t_functors>...
+    struct visitor : wrapper<visitor<t_machine, t_functors...>, t_functors>...
     {
         using machine_type = t_machine;
-        dispatcher(machine_type& machine)
-            : machine(machine)
+        visitor(machine_type& machine) : machine(machine)
         { }
         machine_type& machine;
 
         template<class t_functor>
-        using wrapper_type = functor_wrapper<
-            dispatcher<machine_type, t_functors...>, t_functor>;
+        using wrapper_type =
+            wrapper<visitor<machine_type, t_functors...>, t_functor>;
         using wrapper_type<t_functors>::operator()...;
     };
 
@@ -69,24 +67,23 @@ namespace cl
     struct machine
     {
         using stack_type = stack<traits::callee<t_functors>...>;
+        using visitor_type = visitor<machine<t_functors...>, t_functors...>;
 
         template<typename... t_args>
-        machine(t_args&&... args)
+        machine(t_args&&... args) : dispatcher(*this)
         {
             prepare(args...);
         }
 
         void execute()
         {
-            dispatcher<decltype(*this), t_functors...> dispatch(*this);
-            std::visit(dispatch, this->stack);
+            std::visit(dispatcher, this->stack);
         }
 
         template<typename... t_args>
         void prepare(t_args&&... args)
         {
-            callee<t_args...> callee(args...);
-            stack = callee;
+            stack = callee<t_args...>(args...);
         }
 
         void finish()
@@ -96,5 +93,6 @@ namespace cl
 
         bool pending = true;
         stack_type stack;
+        visitor_type dispatcher;
     };
 }
