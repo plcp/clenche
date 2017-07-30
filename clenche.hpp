@@ -1,4 +1,5 @@
 #include <type_traits>
+#include <functional>
 #include <variant>
 #include <tuple>
 
@@ -10,10 +11,33 @@ namespace cl
     template<typename... t_callees>
     using stack = std::variant<t_callees...>;
 
-    template<typename t_dispatcher, class t_functor, typename t_callee>
+    namespace traits
+    {
+        template<typename t_functor, typename... t_args>
+        using ftype = void(t_functor::*)(t_args...);
+
+        template<class t_functor, typename... t_args>
+        auto sign(ftype<t_functor, int&, t_args...> foo __attribute__((unused)))
+        {
+            return cl::callee<t_args...>();
+        }
+
+        template<class t_functor>
+        struct extract_callee
+        {
+            using type = decltype(
+                sign<t_functor>(&t_functor::template operator()<int>));
+        };
+
+        template<class t_functor>
+        using callee = typename extract_callee<t_functor>::type;
+    }
+
+    template<typename t_dispatcher, class t_functor>
     struct functor_wrapper : t_functor
     {
-        void operator()(t_callee& callee)
+        using callee_type = traits::callee<t_functor>;
+        void operator()(callee_type& callee)
         {
             auto& machine = static_cast<t_dispatcher*>(this)->machine;
             auto fwrapped =
@@ -25,33 +49,20 @@ namespace cl
         }
     };
 
-    template<class... t_functors>
-    struct resolver { };
-
-    template<typename t_machine, typename resolver, typename stack>
-    struct dispatcher;
-
-    template<typename t_machine, class... t_functors, typename... t_callees>
-    struct dispatcher<t_machine, resolver<t_functors...>, stack<t_callees...>>
-       : functor_wrapper<
-            dispatcher<
-                t_machine,
-                resolver<t_functors...>,
-                stack<t_callees...>>, t_functors, t_callees>...
+    template<typename t_machine, class... t_functors>
+    struct dispatcher
+       : functor_wrapper<dispatcher<t_machine, t_functors...>, t_functors>...
     {
         using machine_type = t_machine;
 
-        template<class t_functor, typename t_callee>
+        template<class t_functor>
         using wrapper_type = functor_wrapper<
-            dispatcher<
-                machine_type,
-                resolver<t_functors...>,
-                stack<t_callees...>>, t_functor, t_callee>;
+            dispatcher<machine_type, t_functors...>, t_functor>;
 
         dispatcher(machine_type& machine)
             : machine(machine)
         { }
-        using wrapper_type<t_functors, t_callees>::operator()...;
+        using wrapper_type<t_functors>::operator()...;
 
         machine_type& machine;
     };
@@ -72,10 +83,7 @@ namespace cl
 
         void execute()
         {
-            dispatcher<
-                decltype(*this),
-                resolver<t_functors...>,
-                stack_type> dispatch(*this);
+            dispatcher<decltype(*this), t_functors...> dispatch(*this);
             std::visit(dispatch, this->stack);
         }
 
