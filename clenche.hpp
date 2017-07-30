@@ -39,13 +39,12 @@ namespace cl
         using callee_type = traits::callee<t_functor>;
         void operator()(callee_type& callee)
         {
-            auto& machine = static_cast<t_visitor*>(this)->machine;
-            auto fwrapped =
-                [&](auto&&... args) -> void
+            std::apply(
+                [this](auto&&... args) -> void
                 {
-                    static_cast<t_functor&>(*this)(machine, args...);
-                };
-            std::apply(fwrapped, callee);
+                    static_cast<t_functor&>(*this)(
+                        static_cast<t_visitor*>(this)->machine, args...);
+                }, callee);
         }
     };
 
@@ -53,8 +52,7 @@ namespace cl
     struct visitor : wrapper<visitor<t_machine, t_functors...>, t_functors>...
     {
         using machine_type = t_machine;
-        visitor(machine_type& machine) : machine(machine)
-        { }
+        visitor(machine_type& machine) : machine(machine) { }
         machine_type& machine;
 
         template<class t_functor>
