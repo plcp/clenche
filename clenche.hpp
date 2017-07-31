@@ -42,15 +42,15 @@ namespace cl
         : t_functor
     {
         using callee_type = callee<t_args...>;
-        void operator()(t_args&... args)
-        {
-            static_cast<t_functor&>(*this)(
-                static_cast<t_visitor&>(*this).machine, args...);
-        }
-
         void operator()(callee_type& callee)
         {
-            std::apply(*this, callee);
+            std::apply(
+                [this](t_args&... args)
+                {
+                    static_cast<t_functor&>(*this)(
+                        static_cast<t_visitor&>(*this).machine, args...);
+                }
+            , callee);
         }
     };
 
