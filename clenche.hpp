@@ -23,13 +23,13 @@ namespace cl
         template<typename t_functor, typename... t_args>
         using ftype = void(t_functor::*)(t_args...);
 
-        template<class t_functor, typename... t_args>
+        template<typename t_functor, typename... t_args>
         auto callee_details(ftype<t_functor, clvoid&, t_args...>)
         {
             return cl::callee<t_args...>();
         }
 
-        template<class t_functor>
+        template<typename t_functor>
         struct extract_callee
         {
             using type = decltype(
@@ -39,15 +39,15 @@ namespace cl
         };
 
         // retrieve functor's callee parameters as-tuple type
-        template<class t_functor>
+        template<typename t_functor>
         using callee = typename extract_callee<t_functor>::type;
     }
 
     // functor wrapper, provide callable usable by std::visit on stack
-    template<typename t_visitor, class t_functor, typename... t_args>
+    template<typename t_visitor, typename t_functor, typename... t_args>
     struct wrapper;
 
-    template<typename t_visitor, class t_functor, typename... t_args>
+    template<typename t_visitor, typename t_functor, typename... t_args>
     struct wrapper<t_visitor, t_functor, callee<t_args...>>
         : t_functor
     {
@@ -67,7 +67,7 @@ namespace cl
     };
 
     // provide to std::visit the right « operator()(tuple) » for each functor
-    template<typename t_machine, class... t_functors>
+    template<typename t_machine, typename... t_functors>
     struct visitor
         : wrapper<visitor<t_machine, t_functors...>, t_functors,
             traits::callee<t_functors>>...
@@ -77,13 +77,13 @@ namespace cl
             : machine(machine) { }
         machine_type& machine;
 
-        template<class t_functor>
+        template<typename t_functor>
         using wrapper_type = wrapper<visitor<machine_type, t_functors...>,
             t_functor, traits::callee<t_functor>>;
         using wrapper_type<t_functors>::operator()...;
     };
 
-    // the only class you may need to construct
+    // the only thing you may need to construct
     template<typename... t_functors>
     struct machine
     {
