@@ -111,6 +111,13 @@ namespace cl
             stack = callee<t_args...>(args...);
         }
 
+        // prepare a tagged call to a statefull callable
+        template<typename t_tag>
+        void prepare()
+        {
+           stack = callee<t_tag>();
+        }
+
         // toggle pending boolean
         void finish()
         {
