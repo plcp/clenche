@@ -108,14 +108,16 @@ namespace cl
         template<typename... t_args>
         void prepare(t_args&&... args)
         {
-            stack = callee<t_args...>(args...);
+            using callee_type = callee<
+                typename std::remove_reference<t_args>::type...>;
+            stack.template emplace<callee_type>(std::forward<t_args>(args)...);
         }
 
         // prepare a tagged call to a statefull callable
         template<typename t_tag>
         void prepare()
         {
-           stack = callee<t_tag>();
+            stack.template emplace<callee<t_tag>>();
         }
 
         // toggle pending boolean
