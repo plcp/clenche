@@ -26,18 +26,25 @@ namespace cl
         template<typename t_functor, typename... t_args>
         using ftype = void(t_functor::*)(t_args...);
 
+        // type storing
+        template<typename t_store>
+        struct storage
+        {
+            using type = t_store;
+        };
+
         template<typename t_functor, typename... t_args>
         auto callee_details(ftype<t_functor, clvoid&, t_args...>)
         {
-            return callee<t_args...>(t_args()...);
+            return storage<callee<t_args...>>();
         }
 
         template<typename t_functor>
         struct extract_callee
         {
-            using type = decltype(
+            using type = typename decltype(
                 callee_details<t_functor>(
-                    &t_functor::template operator()<clvoid>));
+                    &t_functor::template operator()<clvoid>))::type;
                     // (remove ambiguity by expliciting template parameter)
         };
 
