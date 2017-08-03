@@ -29,7 +29,7 @@ namespace cl
         template<typename t_functor, typename... t_args>
         auto callee_details(ftype<t_functor, clvoid&, t_args...>)
         {
-            return cl::callee<t_args...>();
+            return callee<t_args...>(t_args()...);
         }
 
         template<typename t_functor>
