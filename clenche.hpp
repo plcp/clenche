@@ -1,3 +1,6 @@
+#ifndef CLENCHE_CLENCHE_HPP_GUARD_
+#define CLENCHE_CLENCHE_HPP_GUARD_
+
 #include <type_traits>
 #include <functional>
 #include <variant>
@@ -131,3 +134,5 @@ namespace cl
         visitor_type dispatcher;
     };
 }
+
+#endif
