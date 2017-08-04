@@ -74,17 +74,16 @@ namespace cl
         {
             using raw_type = typename std::remove_reference<t_ref>::type;
 
-            using ptr_type = raw_type*;
+            using ptr_type = std::reference_wrapper<raw_type>;
             using ref_type = raw_type&;
 
             fake_ref_details(ref_type ref)
-            {
-                ptr = &ref;
-            }
+                : ptr(ref)
+            { }
 
-            operator t_ref&() const
+            operator ref_type&() const
             {
-                return *ptr;
+                return ptr.get();
             }
 
             private:
@@ -95,20 +94,19 @@ namespace cl
         struct fake_ref_details<t_ref, const_ref>
         {
             using raw_type =
-                typename std::remove_reference<
-                typename std::remove_const<t_ref>::type>::type;
+                typename std::remove_const<
+                typename std::remove_reference<t_ref>::type>::type;
 
-            using ptr_type = raw_type*;
+            using ptr_type = std::reference_wrapper<raw_type>;
             using ref_type = const raw_type&;
 
             fake_ref_details(ref_type ref)
-            {
-                ptr = const_cast<ptr_type>(&ref);
-            }
+                : ptr(const_cast<raw_type&>(ref))
+            { }
 
-            operator t_ref&() const
+            operator ref_type() const
             {
-                return const_cast<ref_type>(*ptr);
+                return const_cast<ref_type>(ptr.get());
             }
 
             private:
