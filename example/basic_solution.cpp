@@ -1,5 +1,8 @@
 #include "../clenche.hpp"
 
+struct again;
+struct dec;
+
 struct again
 {
     template<typename t_machine>
@@ -10,7 +13,7 @@ struct again
             machine.finish();
             return;
         }
-        machine.prepare(value, 1);
+        machine.template prepare<dec>(value, 1);
     }
 };
 
@@ -19,7 +22,7 @@ struct dec
     template<typename t_machine>
     void operator()(t_machine& machine, int value, int dec)
     {
-        machine.prepare(value - dec);
+        machine.template prepare<again>(value - dec);
     }
 };
 

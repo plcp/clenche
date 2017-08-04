@@ -16,6 +16,130 @@ namespace cl
     template<typename... t_callees>
     using stack = std::variant<t_callees...>;
 
+    // details
+    namespace details
+    {
+        // const tag
+        struct const_ref {};
+        struct not_const_ref {};
+
+        // reference tag
+        struct ref {};
+        struct not_ref {};
+
+        // tag details, translate a boolean to meaningful tags
+        template<bool boolean, typename t_true, typename t_false>
+        struct tag_details;
+
+        template<typename t_true, typename t_false>
+        struct tag_details<true, t_true, t_false>
+        {
+            using type = t_true;
+        };
+
+        template<typename t_true, typename t_false>
+        struct tag_details<false, t_true, t_false>
+        {
+            using type = t_false;
+        };
+
+        // tag with const-ness
+        template<typename t_ref>
+        using tag_const = typename tag_details<
+            std::is_const<typename std::remove_reference<t_ref>::type>::value,
+            const_ref, not_const_ref>::type;
+
+        // tag with reference-ness
+        template<typename t_ref>
+        using tag_reference = typename tag_details<
+            std::is_reference<t_ref>::value,
+            ref, not_ref>::type;
+
+        // fake reference details, see details::fake_ref
+        template<typename t_ref, typename t_isconst>
+        struct fake_ref_details;
+
+        template<typename t_ref>
+        struct fake_ref_details<t_ref, not_const_ref>
+        {
+            using raw_type = typename std::remove_reference<t_ref>::type;
+
+            using ptr_type = raw_type*;
+            using ref_type = raw_type&;
+
+            fake_ref_details(ref_type ref)
+            {
+                ptr = &ref;
+            }
+
+            operator t_ref&() const
+            {
+                return *ptr;
+            }
+
+            ptr_type ptr;
+        };
+
+        template<typename t_ref>
+        struct fake_ref_details<t_ref, const_ref>
+        {
+            using raw_type =
+                typename std::remove_reference<
+                typename std::remove_const<t_ref>::type>::type;
+
+            using ptr_type = raw_type*;
+            using ref_type = const raw_type&;
+
+            fake_ref_details(ref_type ref)
+            {
+                ptr = const_cast<ptr_type>(&ref);
+            }
+
+            operator t_ref&() const
+            {
+                return const_cast<ref_type>(*ptr);
+            }
+
+            ptr_type ptr;
+        };
+
+        // « nude pointers » wrapper to carry non-copyable or const parameters
+        template<typename t_ref>
+        using fake_ref = fake_ref_details<t_ref, tag_const<t_ref>>;
+
+        // reference fix details, see details::fix_ref
+        template<typename t_ref, typename t_isref>
+        struct fix_ref_details;
+
+        template<typename t_ref>
+        struct fix_ref_details<t_ref, not_ref>
+        {
+            using type = t_ref;
+        };
+
+        template<typename t_ref>
+        struct fix_ref_details<t_ref, ref>
+        {
+            using type = fake_ref<t_ref>;
+        };
+
+        // replace references by fake references
+        template<typename t_ref>
+        using fix_ref =
+            typename fix_ref_details<t_ref, tag_reference<t_ref>>::type;
+
+        // see details::callee_noref below
+        template<typename... t_args>
+        struct callee_noref_details
+        {
+            using type = callee<fix_ref<t_args>...>;
+        };
+
+        // callee type without non-copyable references or else
+        template<typename... t_args>
+        using callee_noref = typename callee_noref_details<t_args...>::type;
+    }
+
     // traits
     namespace traits
     {
@@ -36,7 +160,7 @@ namespace cl
         template<typename t_functor, typename... t_args>
         auto callee_details(ftype<t_functor, clvoid&, t_args...>)
         {
-            return storage<callee<t_args...>>();
+            return storage<details::callee_noref<t_args...>>();
         }
 
         template<typename t_functor>
@@ -124,19 +248,11 @@ namespace cl
         }
 
         // prepare the next call
-        template<typename... t_args>
+        template<typename t_functor, typename... t_args>
         void prepare(t_args&&... args)
         {
-            using callee_type = callee<
-                typename std::remove_reference<t_args>::type...>;
+            using callee_type = traits::callee<t_functor>;
             stack.template emplace<callee_type>(std::forward<t_args>(args)...);
-        }
-
-        // prepare a tagged call to a statefull callable
-        template<typename t_tag>
-        void prepare()
-        {
-            stack.template emplace<callee<t_tag>>();
         }
 
         // toggle pending boolean
