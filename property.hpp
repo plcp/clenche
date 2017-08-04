@@ -132,6 +132,12 @@ namespace cl::property
     {
         using machine_type = cl::machine_details<
             machine<t_functors...>, traits::fix_entry<t_functors>...>;
+
+        template<typename... t_args>
+        machine(t_args&&... args)
+            : machine_type(std::forward<t_args>(args)...)
+        { }
+
         using machine_type::execute;
         using machine_type::pending;
         using machine_type::finish;
