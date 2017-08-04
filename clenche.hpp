@@ -87,7 +87,8 @@ namespace cl
                 return *ptr;
             }
 
-            ptr_type ptr;
+            private:
+                ptr_type ptr;
         };
 
         template<typename t_ref>
@@ -110,7 +111,8 @@ namespace cl
                 return const_cast<ref_type>(*ptr);
             }
 
-            ptr_type ptr;
+            private:
+                ptr_type ptr;
         };
 
         // « nude pointers » wrapper to carry non-copyable or const parameters
@@ -326,8 +328,9 @@ namespace cl
         }
 
         bool pending = true;
-        visitor_type dispatcher;
-        stack_type stack;
+        private:
+            visitor_type dispatcher;
+            stack_type stack;
     };
 }
 
