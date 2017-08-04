@@ -8,7 +8,7 @@
 
 namespace cl
 {
-    // callables MUST inherit from cl::enable<callable-name>
+    // callables MUST inherit from cl::enable<name>
     template<typename t_functor>
     struct enable
     {
@@ -281,18 +281,17 @@ namespace cl
         }
     };
 
-    // the only thing you may need to construct
-    template<typename... t_functors>
-    struct machine
+    template<typename t_machine_type, typename... t_functors>
+    struct machine_details
     {
         using stack_type = stack<traits::callee<t_functors>...>;
         using first_type = typename traits::first<t_functors...>;
-        using visitor_type = visitor<machine<t_functors...>, t_functors...>;
+        using visitor_type = visitor<t_machine_type, t_functors...>;
 
         // prepare the initial call to the first functor specified
         template<typename... t_args>
-        machine(t_args&&... args)
-            : dispatcher(*this),
+        machine_details(t_args&&... args)
+            : dispatcher(static_cast<t_machine_type&>(*this)),
               stack(std::in_place_index_t<0>(),
                     args..., typename first_type::tag())
         { }
@@ -330,6 +329,16 @@ namespace cl
             visitor_type dispatcher;
             stack_type stack;
     };
+
+    template<typename... t_functors>
+    struct machine_basic
+        : machine_details<machine_basic<t_functors...>, t_functors...>
+    { };
+
+    // the only thing you may need to construct
+    template<typename... t_functors>
+    using machine =
+        machine_details<machine_basic<t_functors...>, t_functors...>;
 }
 
 #endif
