@@ -281,7 +281,7 @@ namespace cl
         }
     };
 
-    // the only thing you may need to construct (via make_machine)
+    // the only thing you may need to construct
     template<typename... t_functors>
     struct machine
     {
