@@ -74,6 +74,11 @@ namespace cl
                 }
             , callee);
         }
+
+        t_functor& get()
+        {
+            return static_cast<t_functor&>(*this);
+        }
     };
 
     // provide to std::visit the right « operator()(tuple) » for each functor
@@ -91,6 +96,12 @@ namespace cl
         using wrapper_type = wrapper<visitor<machine_type, t_functors...>,
             t_functor, traits::callee<t_functor>>;
         using wrapper_type<t_functors>::operator()...;
+
+        template<typename t_functor>
+        t_functor& get()
+        {
+            return wrapper_type<t_functor>::get();
+        }
     };
 
     // the only thing you may need to construct
@@ -132,6 +143,13 @@ namespace cl
         void finish()
         {
             pending = false;
+        }
+
+        // retrieve functor
+        template<typename t_functor>
+        t_functor& get()
+        {
+            return dispatcher.get<t_functor>();
         }
 
         bool pending = true;
