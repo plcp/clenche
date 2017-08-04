@@ -20,7 +20,7 @@ struct count
 struct again;
 struct dec;
 
-struct again
+struct again : cl::enable<again>
 {
     template<typename t_machine>
     void operator()(t_machine& machine, const count& counter)
@@ -34,7 +34,7 @@ struct again
     }
 };
 
-struct dec
+struct dec : cl::enable<dec>
 {
     template<typename t_machine>
     void operator()(t_machine& machine, const count& counter, int inc)

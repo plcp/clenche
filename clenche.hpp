@@ -8,6 +8,13 @@
 
 namespace cl
 {
+    // callables MUST inherit from cl::enable<callable-name>
+    template<typename t_functor>
+    struct enable
+    {
+        struct tag { };
+    };
+
     // callee parameters as-tuple type
     template<typename... t_args>
     using callee = std::tuple<t_args...>;
@@ -27,7 +34,8 @@ namespace cl
         struct ref {};
         struct not_ref {};
 
-        // tag details, translate a boolean to meaningful tags
+
+
         template<bool boolean, typename t_true, typename t_false>
         struct tag_details;
 
@@ -54,6 +62,8 @@ namespace cl
         using tag_reference = typename tag_details<
             std::is_reference<t_ref>::value,
             ref, not_ref>::type;
+
+
 
         // fake reference details, see details::fake_ref
         template<typename t_ref, typename t_isconst>
@@ -107,7 +117,8 @@ namespace cl
         template<typename t_ref>
         using fake_ref = fake_ref_details<t_ref, tag_const<t_ref>>;
 
-        // reference fix details, see details::fix_ref
+
+
         template<typename t_ref, typename t_isref>
         struct fix_ref_details;
 
@@ -128,7 +139,8 @@ namespace cl
         using fix_ref =
             typename fix_ref_details<t_ref, tag_reference<t_ref>>::type;
 
-        // see details::callee_noref below
+
+
         template<typename... t_args>
         struct callee_noref_details
         {
@@ -146,25 +158,41 @@ namespace cl
         // dummy
         struct clvoid { };
 
-        // details, see traits::callee
-        template<typename t_functor, typename... t_args>
-        using ftype = void(t_functor::*)(t_args...);
+        // notag
+        struct notag { };
 
-        // type storing
+        // storage
         template<typename t_store>
         struct storage
         {
             using type = t_store;
         };
 
+
+
+        template<typename t_functor, typename... t_args>
+        using ftype = void(t_functor::*)(t_args...);
+
         template<typename t_functor, typename... t_args>
         auto callee_details(ftype<t_functor, clvoid&, t_args...>)
         {
-            return storage<details::callee_noref<t_args...>>();
+            return storage<
+                details::callee_noref<t_args..., typename t_functor::tag>>();
         }
 
+        template<typename t_functor, typename... t_args>
+        auto callee_details(notag, ftype<t_functor, clvoid&, t_args...>)
+        {
+            return storage<
+                details::callee_noref<t_args...>>();
+                // (untagged version for convenience)
+        }
+
+        template<bool tagged, typename t_functor>
+        struct extract_callee;
+
         template<typename t_functor>
-        struct extract_callee
+        struct extract_callee<true, t_functor>
         {
             using type = typename decltype(
                 callee_details<t_functor>(
@@ -172,9 +200,32 @@ namespace cl
                     // (remove ambiguity by expliciting template parameter)
         };
 
+        template<typename t_functor>
+        struct extract_callee<false, t_functor>
+        {
+            using type = typename decltype(
+                callee_details<t_functor>(notag(),
+                    &t_functor::template operator()<clvoid>))::type;
+                    // (untagged version)
+        };
+
+        template<typename t_first, typename... t_args>
+        struct first_details
+        {
+            using type = t_first;
+        };
+
         // retrieve functor's callee parameters as-tuple type
         template<typename t_functor>
-        using callee = typename extract_callee<t_functor>::type;
+        using callee = typename extract_callee<true, t_functor>::type;
+
+        // retrieve functor's callee parameters as-tuple type (untagged)
+        template<typename t_functor>
+        using callee_untagged = typename extract_callee<false, t_functor>::type;
+
+        // retrieve the first item of parameter pack
+        template<typename... t_args>
+        using first = typename first_details<t_args...>::type;
     }
 
     // functor wrapper, provide callable usable by std::visit on stack
@@ -185,12 +236,14 @@ namespace cl
     struct wrapper<t_visitor, t_functor, callee<t_args...>>
         : t_functor
     {
-        using callee_type = callee<t_args...>;
-        void operator()(callee_type& callee)
+        static_assert(std::is_base_of<enable<t_functor>, t_functor>::value);
+
+        using callee_type = traits::callee<t_functor>;
+        void operator()(callee_type callee)
         {
             // use std::apply to pass as-tuple parameters to t_functor's op()
             std::apply(
-                [this](t_args&... args)
+                [this](t_args&... args, typename t_functor::tag)
                 {
                     // use a lambda to pass the machine as first parameter
                     static_cast<t_functor&>(*this)(
@@ -209,7 +262,7 @@ namespace cl
     template<typename t_machine, typename... t_functors>
     struct visitor
         : wrapper<visitor<t_machine, t_functors...>, t_functors,
-            traits::callee<t_functors>>...
+            traits::callee_untagged<t_functors>>...
     {
         using machine_type = t_machine;
         visitor(machine_type& machine)
@@ -218,7 +271,7 @@ namespace cl
 
         template<typename t_functor>
         using wrapper_type = wrapper<visitor<machine_type, t_functors...>,
-            t_functor, traits::callee<t_functor>>;
+            t_functor, traits::callee_untagged<t_functor>>;
         using wrapper_type<t_functors>::operator()...;
 
         template<typename t_functor>
@@ -228,17 +281,20 @@ namespace cl
         }
     };
 
-    // the only thing you may need to construct
+    // the only thing you may need to construct (via make_machine)
     template<typename... t_functors>
     struct machine
     {
         using stack_type = stack<traits::callee<t_functors>...>;
+        using first_type = typename traits::first<t_functors...>;
         using visitor_type = visitor<machine<t_functors...>, t_functors...>;
 
-        // prepare the initial call with passed parameters
+        // prepare the initial call to the first functor specified
         template<typename... t_args>
         machine(t_args&&... args)
-            : dispatcher(*this), stack({args...})
+            : dispatcher(*this),
+              stack(std::in_place_index_t<0>(),
+                    args..., typename first_type::tag())
         { }
 
         // execute the last prepared call
@@ -252,7 +308,8 @@ namespace cl
         void prepare(t_args&&... args)
         {
             using callee_type = traits::callee<t_functor>;
-            stack.template emplace<callee_type>(std::forward<t_args>(args)...);
+            stack.template emplace<callee_type>(
+                std::forward<t_args>(args)..., typename t_functor::tag());
         }
 
         // toggle pending boolean
