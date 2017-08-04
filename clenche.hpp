@@ -65,19 +65,19 @@ namespace cl
 
 
 
-        // fake reference details, see details::fake_ref
+        // fake reference details, see details::fake_reference
         template<typename t_ref, typename t_isconst>
-        struct fake_ref_details;
+        struct fake_reference_details;
 
         template<typename t_ref>
-        struct fake_ref_details<t_ref, not_const_ref>
+        struct fake_reference_details<t_ref, not_const_ref>
         {
             using raw_type = typename std::remove_reference<t_ref>::type;
 
             using ptr_type = std::reference_wrapper<raw_type>;
             using ref_type = raw_type&;
 
-            fake_ref_details(ref_type ref)
+            fake_reference_details(ref_type ref)
                 : ptr(ref)
             { }
 
@@ -91,7 +91,7 @@ namespace cl
         };
 
         template<typename t_ref>
-        struct fake_ref_details<t_ref, const_ref>
+        struct fake_reference_details<t_ref, const_ref>
         {
             using raw_type =
                 typename std::remove_const<
@@ -100,7 +100,7 @@ namespace cl
             using ptr_type = std::reference_wrapper<raw_type>;
             using ref_type = const raw_type&;
 
-            fake_ref_details(ref_type ref)
+            fake_reference_details(ref_type ref)
                 : ptr(const_cast<raw_type&>(ref))
             { }
 
@@ -115,36 +115,36 @@ namespace cl
 
         // « nude pointers » wrapper to carry non-copyable or const parameters
         template<typename t_ref>
-        using fake_ref = fake_ref_details<t_ref, tag_const<t_ref>>;
+        using fake_reference = fake_reference_details<t_ref, tag_const<t_ref>>;
 
 
 
         template<typename t_ref, typename t_isref>
-        struct fix_ref_details;
+        struct fix_reference_details;
 
         template<typename t_ref>
-        struct fix_ref_details<t_ref, not_ref>
+        struct fix_reference_details<t_ref, not_ref>
         {
             using type = t_ref;
         };
 
         template<typename t_ref>
-        struct fix_ref_details<t_ref, ref>
+        struct fix_reference_details<t_ref, ref>
         {
-            using type = fake_ref<t_ref>;
+            using type = fake_reference<t_ref>;
         };
 
         // replace references by fake references
         template<typename t_ref>
-        using fix_ref =
-            typename fix_ref_details<t_ref, tag_reference<t_ref>>::type;
+        using fix_reference =
+            typename fix_reference_details<t_ref, tag_reference<t_ref>>::type;
 
 
 
         template<typename... t_args>
         struct callee_noref_details
         {
-            using type = callee<fix_ref<t_args>...>;
+            using type = callee<fix_reference<t_args>...>;
         };
 
         // callee type without non-copyable references or else
