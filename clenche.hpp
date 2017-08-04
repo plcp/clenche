@@ -103,10 +103,8 @@ namespace cl
         // prepare the initial call with passed parameters
         template<typename... t_args>
         machine(t_args&&... args)
-            : dispatcher(*this)
-        {
-            prepare(args...);
-        }
+            : dispatcher(*this), stack({args...})
+        { }
 
         // execute the last prepared call
         void execute()
@@ -137,8 +135,8 @@ namespace cl
         }
 
         bool pending = true;
-        stack_type stack;
         visitor_type dispatcher;
+        stack_type stack;
     };
 }
 
