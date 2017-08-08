@@ -335,19 +335,19 @@ namespace cl
     struct machine
         : machine_details<machine<t_functors...>, t_functors...>
     {
-        using machine_type = cl::machine_details<
-            machine<t_functors...>, t_functors...>;
+        using machine_type = machine<t_functors...>;
+        using details_type = cl::machine_details<machine_type, t_functors...>;
 
         template<typename... t_args>
         machine(t_args&&... args)
-            : machine_type(std::forward<t_args>(args)...)
+            : details_type(std::forward<t_args>(args)...)
         { }
 
-        using machine_type::execute;
-        using machine_type::prepare;
-        using machine_type::pending;
-        using machine_type::finish;
-        using machine_type::get;
+        using details_type::execute;
+        using details_type::prepare;
+        using details_type::pending;
+        using details_type::finish;
+        using details_type::get;
     };
 }
 

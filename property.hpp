@@ -130,29 +130,30 @@ namespace cl::property
         : cl::machine_details<
             machine<t_functors...>, traits::fix_entry<t_functors>...>
     {
-        using machine_type = cl::machine_details<
-            machine<t_functors...>, traits::fix_entry<t_functors>...>;
+        using machine_type = machine<t_functors...>;
+        using details_type = cl::machine_details<
+            machine_type, traits::fix_entry<t_functors>...>;
 
         template<typename... t_args>
         machine(t_args&&... args)
-            : machine_type(std::forward<t_args>(args)...)
+            : details_type(std::forward<t_args>(args)...)
         { }
 
-        using machine_type::execute;
-        using machine_type::pending;
-        using machine_type::finish;
+        using details_type::execute;
+        using details_type::pending;
+        using details_type::finish;
 
         template<typename t_functor, typename... t_args>
         void prepare(t_args&&... args)
         {
-            machine_type::template prepare<traits::fix_entry<t_functor>>(
+            details_type::template prepare<traits::fix_entry<t_functor>>(
                 std::forward<t_args>(args)...);
         }
 
         template<typename t_functor>
         auto& get()
         {
-            return machine_type::template get<traits::fix_entry<t_functor>>();
+            return details_type::template get<traits::fix_entry<t_functor>>();
         }
     };
 }
