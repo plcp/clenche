@@ -330,15 +330,25 @@ namespace cl
             stack_type stack;
     };
 
-    template<typename... t_functors>
-    struct machine_basic
-        : machine_details<machine_basic<t_functors...>, t_functors...>
-    { };
-
     // the only thing you may need to construct
     template<typename... t_functors>
-    using machine =
-        machine_details<machine_basic<t_functors...>, t_functors...>;
+    struct machine
+        : machine_details<machine<t_functors...>, t_functors...>
+    {
+        using machine_type = cl::machine_details<
+            machine<t_functors...>, t_functors...>;
+
+        template<typename... t_args>
+        machine(t_args&&... args)
+            : machine_type(std::forward<t_args>(args)...)
+        { }
+
+        using machine_type::execute;
+        using machine_type::prepare;
+        using machine_type::pending;
+        using machine_type::finish;
+        using machine_type::get;
+    };
 }
 
 #endif
