@@ -141,6 +141,10 @@ namespace cl::traits
     // notag
     struct notag { };
 
+    // pack
+    template<typename... t_args>
+    struct pack { };
+
     // storage
     template<typename t_store>
     struct storage
@@ -207,5 +211,58 @@ namespace cl::traits
     template<typename... t_args>
     using first = typename first_details<t_args...>::type;
 }
+#endif
 
+
+
+#ifdef CLENCHE_TRAITS_HPP_EXTRA_
+
+#ifndef CLENCHE_TRAITS_HPP_EXTRA_GUARD_
+#define CLENCHE_TRAITS_HPP_EXTRA_GUARD_
+
+namespace cl::traits
+{
+    template<typename t_parent, typename t_visitor>
+    struct extract_functors_details;
+
+    template<typename t_parent, typename... t_functors>
+    struct extract_functors_details<
+        t_parent, visitor<t_parent, t_functors...>>
+    {
+        using type = pack<t_functors...>;
+    };
+
+    template<typename t_parent, typename... t_functors>
+    struct extract_functors_details<
+        t_parent, machine_details<t_parent, t_functors...>>
+    {
+        using type = pack<t_functors...>;
+    };
+
+    // extract the functors from a visitor or a machine details
+    template<typename t_target, typename t_parent>
+    using extract_functors = typename extract_functors_details<
+        t_parent, t_target>::type;
+
+    template<typename t_machine, typename t_pack>
+    struct is_machine_type_details;
+
+    template<typename t_machine, typename... t_functors>
+    struct is_machine_type_details<t_machine, pack<t_functors...>>
+    {
+        static constexpr bool value =
+            std::is_base_of<
+                cl::machine_details<t_machine, t_functors...>,
+                t_machine>::value;
+    };
+
+    // is_machine_type::value returns true if t_machine is consistent machine
+    template<typename t_machine>
+    using is_machine_type = is_machine_type_details<t_machine,
+        extract_functors<
+            typename t_machine::visitor_type,
+            typename t_machine::machine_type>>;
+}
+
+#endif
 #endif

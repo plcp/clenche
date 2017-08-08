@@ -151,4 +151,10 @@ namespace cl
     };
 }
 
+#ifndef CLENCHE_TRAITS_HPP_EXTRA_
+#define CLENCHE_TRAITS_HPP_EXTRA_
+
+#include "traits.hpp"
+
+#endif
 #endif
