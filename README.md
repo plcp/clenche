@@ -1,5 +1,5 @@
 # clenche
-Low-cost clenche machine using std::variant
+Low-cost clenche machine, flatten your call graph by using deferred calls.
 
 # Quick setup
 Use the `Makefile` to build the examples:
@@ -9,103 +9,66 @@ Use the `Makefile` to build the examples:
     make
 ```
 
-Works with `g++ (GCC) 7.1.1 20170630` and various other compilers.
+# Requirements
 
-# Problem
+Any working compiler with a proper support of `std::variant`, `std::visit` and
+`std::apply`.
 
-Suppose that we have `A`, `B` and `C`, three callables which:
- - takes one or more parameters
- - never returns
+Tested with `g++ (GCC) 7.1.1 20170630` and few other compilers.
 
-This ever-increasing call stack is incompatible with how C/C++ works:
-```C++
-void A(...)
-{
-    if(...)
-        B(...);
-    else
-        C(...);
-}
+# TL;DR
 
-void B(...)
-{
-    C(...);
-}
+It's providing flat call-graphs by the use of deferred calls and a « shared
+stack frame », enabling low-cost dynamic control flow.
 
-void C(...)
-{
-    if(...)
-        B(...);
-    else if(...)
-        A(...);
+The *clenche thing* is the infrastructure that do the associated compile-time
+heavy lifting through `--std=c++17` templatery.
 
-    // the stack explodes way before we reach this point
-}
+# Overview
 
-int main()
-{
-    A(...);
-}
-```
-
-Sometimes, we can rely on [tail call
-optimization](https://gcc.gnu.org/onlinedocs/gccint/Tail-Calls.html) performed
-by the compiler to keep a small call stack, but it's not a guarantee.
-
-We can circumvent this problem by re-writing our program as a state machine
-build around an union to hold callable's parameters and a function pointer :
-```C++
-void A(state)
-{
-    /* retrieve my parameters in state._union */
-
-    if(...)
-    {
-        state._union = {/* B parameters */};
-        state._fnext = *B;
-    } else {
-        state._union = {/* C parameters */};
-        state._fnext = *C;
-    }
-}
+Here are a chunk of code to give you an idea of what this is about:
+```cpp
+#include "clenche.hpp"
 
 // ...
 
+struct functor : cl:enable<functor>
+{
+    template<typename t_machine>
+    void operator()(t_machine& machine, /* retrieve parameters */)
+    {
+        // do some computations ...
+
+        // ... then a deferred call
+        machine.template prepare<reachable>(/* pass parameters */);
+    }
+};
+
 int main()
 {
-    state_type state;
-    state._union = {/* A parameters */};
-    state._fnext = *A;
-
-    while(state._fnext)
-    {
-        state.execute_fnext();
-        state._fnext = nullptr;
-    }
+    cl::machine<each, functor, reachable> machine;
+    while(machine.pending)
+        machine.execute();
 }
 ```
-Thus, we have somehow addressed the problem by using a single « shared » call
-frame on our stack, enabling us to emulate an « infinite recursion » between the
-small subset of our callables.
 
-You may see this as a simple finite state machine, a manual tail-recursion
-optimisation, an abuse of some kind of weak delegates, weak coroutines without
-preemption nor continuation, but we prefer to explain it the other way.
+You'll find working examples in `./example` :
+ - See `example/0_problem.cpp` and `example/1_solution.cpp` for a minimal
+   working example.
+ - See `example/2_nocopy.cpp` for an example of deferred calls using
+   `const` references to pass non-copyables.
+ - See `example/3_property.cpp` for an example of property-based traits.
 
-# Implementation
+# Features
 
-We address the problem mentioned above by using
-[std::variant](http://en.cppreference.com/w/cpp/utility/variant) as a type-safe
-templated union, [std::tuple](http://en.cppreference.com/w/cpp/utility/tuple) to
-convey our parameters,
-[std::visit](http://en.cppreference.com/w/cpp/utility/variant/visit) to resolve
-which callable is targeted by the call and
-[std::apply](http://en.cppreference.com/w/cpp/utility/apply) to expand our
-tuples.
+For now, it provides :
+ - Flattened call-graph within a shared call frame.
+ - Deferred calls through transparent parameter passing.
+ - Property-based traits infrastructure.
+
+Proper support for cv-qualifiers are planned along with some sugar to write
+compile-time call graphs and an agent-based infrastructure.
 
 # Contribute
 
-If you find ways to ease the compiler's work of inlining the calls or optimizing
-the call, to rewrite some parts of the code in a simpler fashion, to spare
-precious bytes of memory without impairing readability, or to provide some
-zero-cost abstraction to ease the use of the API, feel free to contribute.
+Feel free to contribute, ask questions or post issues.
