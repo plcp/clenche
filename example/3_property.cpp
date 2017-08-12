@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include "../clenche.hpp"
-#include "../property.hpp"
+#include "clenche.hpp"
+#include "property.hpp"
 
 struct divisor
 {

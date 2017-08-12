@@ -1,4 +1,4 @@
-#include "../clenche.hpp"
+#include "clenche.hpp"
 
 struct again;
 struct dec;
