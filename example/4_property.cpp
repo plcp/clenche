@@ -21,25 +21,31 @@ struct divisor
 };
 
 struct ask;
+struct count;
 
 struct check : cl::property::entry<check>
 {
-    // entry constructor
+    using after = count;
+
     check(divisor& divisor, size_t own_value)
-        : divisor_reference(divisor), own_value(own_value)
+        : own_value(own_value), divisor_reference(divisor)
     { }
 
-    // static method called before the main loop on entries
-    template<typename t_machine, typename t_property>
-    static void before(t_machine& machine, t_property& property)
+    template<typename t_property>
+    void operator()(t_property&, size_t target_number)
     {
-        machine.template prepare<ask>();
-        number = property.size() + 1;
+        isdivisor = divisor_reference.get().divide(target_number, own_value);
     }
 
-    // static method called after the main loop on entries
-    template<typename t_machine, typename t_property>
-    static void after(t_machine&, t_property& property)
+    size_t own_value;
+    bool isdivisor = false;
+    std::reference_wrapper<divisor> divisor_reference; // keep entry movable
+};
+
+struct count : cl::enable<count>
+{
+    template<typename t_machine, typename t_functor>
+    void static process(t_machine&, t_functor& property)
     {
         bool isprime = true;
         for(auto& f : property.functors)
@@ -50,30 +56,8 @@ struct check : cl::property::entry<check>
         else
             std::cout << "It's not a prime !\n\n";
     }
-
-    // operator() called on each entry during the main loop
-    template<typename t_property>
-    void operator()(t_property&, bool skip_even)
-    {
-        if(skip_even && own_value % 2 == 0)
-        {
-            isdivisor = false;
-            return;
-        }
-
-        isdivisor = divisor_reference.get().divide(number, own_value);
-    }
-
-    // you MUST have move assignment, thus use reference_wrapper when needed
-    std::reference_wrapper<divisor> divisor_reference;
-
-    size_t own_value;
-    static size_t number;
-    bool isdivisor = false;
 };
-size_t check::number = 0;
 
-// common functors works as well and are compatible with properties
 struct ask : cl::enable<ask>
 {
     template<typename t_machine>
@@ -83,36 +67,24 @@ struct ask : cl::enable<ask>
         std::cout << "Enter a number: ";
         std::cin >> n;
 
-        if(n < 2 || n > 10000000)
-        {
-            machine.finish();
-            return;
-        }
+        auto& property = machine.template get<cl::edge<check, ask>>();
 
-        // use machine.get<functor> to retrieve properties as other functors
-        auto& property = machine.template get<check>();
-
-        // property.add pass its arguments to construct entries
+        // worst prime calculation ever
         while(property.size() < n - 1)
             property.add(main_divisor, property.size());
 
-        // property.remove tag entries as deleted and tag property as dirty
         for(size_t i = property.size(); i > n - 1; --i)
             property.remove(i); // ^ !! linear when tagged as dirty
 
-        // clean deleted entries and tag property as clean
         property.clean();
-
-        // parameters are broadcasted to all entries
-        machine.template prepare<check>((n % 2 == 1));
+        machine.template prepare<check>(n);
     }
-
     divisor main_divisor;
 };
 
 int main()
 {
-    cl::property::machine<ask, check> machine;
+    cl::property::machine<ask, cl::edge<check, ask>> machine;
     while(machine.pending)
         machine.execute();
 }

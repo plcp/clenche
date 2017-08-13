@@ -3,14 +3,16 @@
 
 #include <vector>
 #include "clenche.hpp"
+#include "sequence.hpp"
 
 namespace cl::property
 {
     // callables as-property-entry MUST inherit from cl::property::entry<name>
     template<typename t_functor>
-    struct entry
+    struct entry : cl::enable<entry<t_functor>>
     {
         bool deleted = false;
+        void _cl__dock() { };
     };
 
     template<typename t_functor, typename t_operator>
@@ -24,6 +26,9 @@ namespace cl::property
 
         using functor_type = t_functor;
         using vector_type = std::vector<functor_type>;
+        using before = typename functor_type::before;
+        using after = typename functor_type::after;
+        using tag = typename functor_type::tag;
 
         // add an entry
         template<typename... tt_args>
@@ -69,9 +74,8 @@ namespace cl::property
         }
 
         template<typename t_machine>
-        void operator()(t_machine& machine, t_args... args)
+        void operator()(t_machine&, t_args... args)
         {
-            functor_type::before(machine, *this);
             std::for_each(functors.begin(), functors.end(),
                 [&](functor_type& f)
                 {
@@ -79,7 +83,6 @@ namespace cl::property
                     {
                         f(*this, args...);
                     }});
-            functor_type::after(machine, *this);
         }
 
         bool dirty = false;
@@ -127,11 +130,11 @@ namespace cl::property
     // the only thing you may need to construct
     template<typename... t_functors>
     struct machine
-        : cl::machine_details<
+        : cl::sequence::machine_details<
             machine<t_functors...>, traits::fix_entry<t_functors>...>
     {
         using machine_type = machine<t_functors...>;
-        using details_type = cl::machine_details<
+        using details_type = cl::sequence::machine_details<
             machine_type, traits::fix_entry<t_functors>...>;
 
         template<typename... t_args>
@@ -154,6 +157,41 @@ namespace cl::property
         auto& get()
         {
             return details_type::template get<traits::fix_entry<t_functor>>();
+        }
+    };
+}
+
+namespace cl::sequence
+{
+    template<typename t_functor, typename t_next, typename... t_args>
+    struct edge_details<
+        cl::property::entry<t_functor>,
+        t_functor,
+        t_next,
+        cl::callee<t_args...>>
+        : details::wrap_functor<
+            cl::property::traits::fix_entry<t_functor>,
+            t_next,
+            cl::callee<t_args...>>,
+          cl::enable<edge_details<
+            cl::property::entry<t_functor>,
+            t_functor,
+            t_next,
+            cl::callee<t_args...>>>
+    {
+        using functor_type = details::wrap_functor<
+            cl::property::traits::fix_entry<t_functor>,
+            t_next,
+            cl::callee<t_args...>>;
+        using before = typename functor_type::before;
+        using after = typename functor_type::after;
+        using tag = typename functor_type::tag;
+
+        template<typename t_machine>
+        void operator()(t_machine& machine, t_args... args)
+        {
+            functor_type::operator()(machine,
+                std::forward<t_args>(args)...);
         }
     };
 }

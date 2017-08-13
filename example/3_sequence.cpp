@@ -108,7 +108,7 @@ int main()
         ticktock<tick>,
         tock,
         ticktock<tock>,
-        cl::jump<tick, end>>;
+        cl::edge<tick, end>>;
 
     cl::sequence::machine<start, callgraph, end> machine;
     while(machine.pending)

@@ -25,35 +25,42 @@ namespace cl::sequence
             }
         };
 
-        template<typename t_first, typename t_second>
-        struct wrap_functor
-            : cl::enable<wrap_functor<t_first, t_second>>, t_first
+        template<typename t_first, typename t_second, typename t_callee>
+        struct wrap_functor;
+
+        template<typename t_first, typename t_second, typename... t_args>
+        struct wrap_functor<t_first, t_second, cl::callee<t_args...>>
+            : t_first, cl::enable<
+                wrap_functor<t_first, t_second, cl::callee<t_args...>>>
         {
             using functor_type = t_first;
             using before = wrap_before<functor_type, t_second>;
-            using functor_type::after;
-            using functor_type::tag;
+            using after = typename functor_type::after;
+            using tag = typename functor_type::tag;
 
             template<typename t_machine>
-            void operator()(t_machine& machine)
+            void operator()(t_machine& machine, t_args&&... args)
             {
-                functor_type::operator()(machine);
+                functor_type::operator()(machine,
+                    std::forward<t_args>(args)...);
             }
         };
 
-        template<typename t_first>
-        struct wrap_functor<t_first, cl::none>
-            : cl::enable<wrap_functor<t_first, cl::none>>, t_first
+        template<typename t_first, typename... t_args>
+        struct wrap_functor<t_first, cl::none, cl::callee<t_args...>>
+            : t_first, cl::enable<
+                wrap_functor<t_first, cl::none, cl::callee<t_args...>>>
         {
             using functor_type = t_first;
-            using functor_type::before;
-            using functor_type::after;
-            using functor_type::tag;
+            using before = typename functor_type::before;
+            using after = typename functor_type::after;
+            using tag = typename functor_type::tag;
 
             template<typename t_machine>
-            void operator()(t_machine& machine)
+            void operator()(t_machine& machine, t_args&&... args)
             {
-                functor_type::operator()(machine);
+                functor_type::operator()(machine,
+                    std::forward<t_args>(args)...);
             }
         };
     }
@@ -90,8 +97,10 @@ namespace cl::sequence
     struct compose_details<t_first, t_second>
     {
         using type = cl::traits::pack<
-            details::wrap_functor<t_first, t_second>,
-            details::wrap_functor<t_second, cl::none>>;
+            details::wrap_functor<
+                t_first, t_second, cl::traits::callee_untagged<t_first>>,
+            details::wrap_functor<
+                t_second, cl::none, cl::traits::callee_untagged<t_second>>>;
     };
 
     template<typename t_first, typename t_second, typename... t_remaining>
@@ -99,7 +108,8 @@ namespace cl::sequence
         : compose_details<t_second, t_remaining...>
     {
         using type = typename cl::traits::merge_pack<
-            details::wrap_functor<t_first, t_second>,
+            details::wrap_functor<
+                t_first, t_second, cl::traits::callee_untagged<t_first>>,
             typename compose_details<t_second, t_remaining...>::type>::type;
     };
 
@@ -137,17 +147,46 @@ namespace cl::sequence
                 machine_type, t_functors...>::details_type;
     };
 
-    template<typename t_functor, typename t_next>
-    struct jump
-        : details::wrap_functor<t_functor, t_next>
+    template<
+        typename t_dock,
+        typename t_functor,
+        typename t_next,
+        typename t_callee>
+    struct edge_details;
+
+    template<typename t_functor, typename t_next, typename... t_args>
+    struct edge_details<
+        cl::enable<t_functor>,
+        t_functor,
+        t_next,
+        cl::callee<t_args...>>
+        : details::wrap_functor<t_functor, t_next, cl::callee<t_args...>>,
+          cl::enable<edge_details<
+            cl::enable<t_functor>,
+            t_functor,
+            t_next,
+            cl::callee<t_args...>>>
     {
-        using functor_type = details::wrap_functor<t_functor, t_next>;
+        using functor_type =
+            details::wrap_functor<t_functor, t_next, cl::callee<t_args...>>;
+        using before = typename functor_type::before;
+        using after = typename functor_type::after;
+        using tag = typename functor_type::tag;
+
         template<typename t_machine>
-        void operator()(t_machine& machine)
+        void operator()(t_machine& machine, t_args&&... args)
         {
-            functor_type::operator()(machine);
+            functor_type::operator()(machine,
+                std::forward<t_args>(args)...);
         }
     };
+
+    template<typename t_functor, typename t_next>
+    using edge = edge_details<
+        cl::traits::dock<t_functor>,
+        t_functor,
+        t_next,
+        cl::traits::callee_untagged<t_functor>>;
 }
 
 namespace cl
@@ -156,7 +195,7 @@ namespace cl
     using compose = cl::sequence::compose<t_functors...>;
 
     template<typename t_functor, typename t_next>
-    using jump = cl::sequence::jump<t_functor, t_next>;
+    using edge = cl::sequence::edge<t_functor, t_next>;
 }
 
 #endif

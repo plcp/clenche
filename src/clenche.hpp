@@ -25,6 +25,9 @@ namespace cl
         // over-rideable before/after callables
         using after = none;
         using before = none;
+
+        // member used for resolution (see cl::traits::dock)
+        void _cl__dock() { };
     };
 
     // callee parameters as-tuple type

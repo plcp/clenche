@@ -233,6 +233,21 @@ namespace cl::traits
     // retrieve the first item of parameter pack
     template<typename... t_args>
     using first = typename first_details<t_args...>::type;
+
+    template<typename t_docking, typename t_dock>
+    t_docking get_dock_of(t_dock t_docking::*);
+
+    template<typename t_functor>
+    struct dock_details
+    {
+        using type =
+            decltype(get_dock_of(&t_functor::_cl__dock));
+        // (neat trick to get the base class)
+    };
+
+    // retrieve t_functor's owning the dock point
+    template<typename t_functor>
+    using dock = typename dock_details<t_functor>::type;
 }
 #endif
 
