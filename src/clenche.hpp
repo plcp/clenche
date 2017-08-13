@@ -53,11 +53,11 @@ namespace cl
 
         using before_functor = typename t_functor::before; // see cl::enable
         static constexpr bool has_before =
-            std::is_base_of<enable<before_functor>, before_functor>::value;
+            !std::is_base_of<none, before_functor>::value;
 
         using after_functor = typename t_functor::after; // see cl::enable
         static constexpr bool has_after =
-            std::is_base_of<enable<after_functor>, after_functor>::value;
+            !std::is_base_of<none, after_functor>::value;
 
         using callee_type = traits::callee<t_functor>;
         void operator()(callee_type callee)
@@ -89,7 +89,7 @@ namespace cl
 
     // provide to std::visit the right « operator()(tuple) » for each functor
     template<typename t_machine, typename... t_functors>
-    struct visitor
+    struct visitor // ERROR: Every callable MUST be specified exactly one time.
         : wrapper<visitor<t_machine, t_functors...>, t_functors,
             traits::callee_untagged<t_functors>>...
     {
@@ -137,7 +137,8 @@ namespace cl
         void prepare(t_args&&... args)
         {
             using callee_type = traits::callee<t_functor>;
-            stack.template emplace<callee_type>(
+            stack. // ERROR: Unresolvable callable tag or prototype
+                template emplace<callee_type>(
                 std::forward<t_args>(args)..., typename t_functor::tag());
         }
 
@@ -172,12 +173,6 @@ namespace cl
         machine(t_args&&... args)
             : details_type(std::forward<t_args>(args)...)
         { }
-
-        using details_type::execute;
-        using details_type::prepare;
-        using details_type::pending;
-        using details_type::finish;
-        using details_type::get;
     };
 }
 
