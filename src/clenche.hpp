@@ -8,11 +8,23 @@
 
 namespace cl
 {
+    // none functor
+    struct none
+    {
+        template<typename t_machine, typename t_functor>
+        void static process(t_machine&, t_functor& functor) { }
+    };
+
     // callables MUST inherit from cl::enable<name>
     template<typename t_functor>
     struct enable
     {
+        // unique tag type
         struct tag { };
+
+        // over-rideable before/after callables
+        using after = none;
+        using before = none;
     };
 
     // callee parameters as-tuple type
@@ -36,7 +48,16 @@ namespace cl
     struct wrapper<t_visitor, t_functor, callee<t_args...>>
         : t_functor
     {
-        static_assert(std::is_base_of<enable<t_functor>, t_functor>::value);
+        static_assert( // ERROR: callable MUST inherit from cl::enable<name>
+            std::is_base_of<enable<t_functor>, t_functor>::value);
+
+        using before_functor = typename t_functor::before; // see cl::enable
+        static constexpr bool has_before =
+            std::is_base_of<enable<before_functor>, before_functor>::value;
+
+        using after_functor = typename t_functor::after; // see cl::enable
+        static constexpr bool has_after =
+            std::is_base_of<enable<after_functor>, after_functor>::value;
 
         using callee_type = traits::callee<t_functor>;
         void operator()(callee_type callee)
@@ -45,9 +66,17 @@ namespace cl
             std::apply(
                 [this](t_args&... args, typename t_functor::tag)
                 {
+                    auto& functor = static_cast<t_functor&>(*this);
+                    auto& machine = static_cast<t_visitor&>(*this).machine;
+
+                    if constexpr(has_before)
+                        before_functor::process(machine, functor);
+
                     // use a lambda to pass the machine as first parameter
-                    static_cast<t_functor&>(*this)(
-                        static_cast<t_visitor&>(*this).machine, args...);
+                   functor(machine, args...);
+
+                    if constexpr(has_after)
+                        after_functor::process(machine, functor);
                 }
             , callee);
         }
@@ -93,7 +122,8 @@ namespace cl
         machine_details(t_args&&... args)
             : dispatcher(static_cast<t_machine_type&>(*this)),
               stack(std::in_place_index_t<0>(),
-                    args..., typename first_type::tag())
+                    args..., typename first_type::tag(
+            )) // ERROR: Every callable MUST inherit from cl::enable<its-name>
         { }
 
         // execute the last prepared call

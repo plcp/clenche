@@ -180,7 +180,8 @@ namespace cl::traits
     {
         using type = typename decltype(
             callee_details<t_functor>(
-                &t_functor::template operator()<clvoid>))::type;
+            &t_functor // ERROR: You MUST provide a proper operator()
+            ::template operator()<clvoid>))::type;
                 // (remove ambiguity by expliciting template parameter)
     };
 
@@ -189,7 +190,8 @@ namespace cl::traits
     {
         using type = typename decltype(
             callee_details<t_functor>(notag(),
-                &t_functor::template operator()<clvoid>))::type;
+                &t_functor // ERROR: You MUST provide a proper operator()
+                ::template operator()<clvoid>))::type;
                 // (untagged version)
     };
 
