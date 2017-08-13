@@ -145,6 +145,27 @@ namespace cl::traits
     template<typename... t_args>
     struct pack { };
 
+    template<typename t_head, typename t_pack>
+    struct merge_pack;
+
+    template<typename... t_head, typename... t_tail>
+    struct merge_pack<pack<t_head...>, pack<t_tail...>>
+    {
+        using type = pack<t_head..., t_tail...>;
+    };
+
+    template<typename t_head, typename... t_tail>
+    struct merge_pack<t_head, pack<t_tail...>>
+    {
+        using type = pack<t_head, t_tail...>;
+    };
+
+    template<typename... t_head, typename t_tail>
+    struct merge_pack<pack<t_head...>, t_tail>
+    {
+        using type = pack<t_head..., t_tail>;
+    };
+
     // storage
     template<typename t_store>
     struct storage
