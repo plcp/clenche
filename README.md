@@ -1,5 +1,5 @@
 # clenche
-Low-cost clenche machine, flatten your call graph by using deferred calls.
+Low-cost clenche machine, provides deferred calls and dynamic control flow.
 
 # Quick setup
 Use the `Makefile` to build the examples:
@@ -18,21 +18,21 @@ Tested with `g++ (GCC) 7.1.1 20170630` and few other compilers.
 
 # TL;DR
 
-It's providing flat call-graphs by the use of deferred calls and a « shared
-stack frame », enabling low-cost dynamic control flow.
+It enables flat and dynamic control flow by the use of deferred calls and a
+« shared stack frame ».
 
-The *clenche thing* is the infrastructure that do the associated compile-time
+The *clenche thing* is the infrastructure that does the associated compile-time
 heavy lifting through `--std=c++17` templatery.
 
 # Overview
 
-Here are a chunk of code to give you an idea of what this is about:
+Here are a chunk of code to gives you an idea:
 ```cpp
 #include "clenche.hpp"
 
 // ...
 
-struct functor : cl:enable<functor>
+struct functor : cl::enable<functor>
 {
     template<typename t_machine>
     void operator()(t_machine& machine, /* retrieve parameters */)
@@ -53,22 +53,24 @@ int main()
 ```
 
 You'll find working examples in `./example` :
- - See `example/0_problem.cpp` and `example/1_solution.cpp` for a minimal
-   working example.
+ - See `example/0_problem.cpp` and `example/1_solution.cpp` for minimal working
+   examples and machinery details.
  - See `example/2_nocopy.cpp` for an example of deferred calls using
    `const` references to pass non-copyables.
- - See `example/3_property.cpp` for an example of property-based traits.
+ - See `example/3_sequence.cpp` for an example of the sequence machinery.
+ - See `example/4_property.cpp` for an example of the properties machinery.
 
 # Features
 
 For now, it provides :
- - Flattened call-graph within a shared call frame.
+ - Flat control flow within a shared call frame.
  - Deferred calls through transparent parameter passing.
- - Property-based traits infrastructure.
+ - Helpers to build compile-time sequences.
+ - Property-based traits infrastructure and evaluation.
 
-Proper support for cv-qualifiers are planned along with some sugar to write
-compile-time call graphs and an agent-based infrastructure.
+Proper support for cv-qualifiers are planned along with some fixes to ease the
+access of functors hidden by `cl::edge` and an agent-based infrastructure.
 
 # Contribute
 
-Feel free to contribute, ask questions or post issues.
+Feel free to contribute !
