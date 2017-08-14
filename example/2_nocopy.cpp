@@ -1,6 +1,7 @@
 #include "clenche.hpp"
 #include <iostream>
 
+// Mighty object that got hard times to be passed via deferred calls.
 struct count
 {
     // non-copyable
@@ -20,6 +21,7 @@ struct count
 struct again;
 struct dec;
 
+// Enjoy transparent reference & const-references parameter passing,
 struct again : cl::enable<again>
 {
     template<typename t_machine>
@@ -34,6 +36,7 @@ struct again : cl::enable<again>
     }
 };
 
+// Preserves the const-qualifier so well, that we discard it in this example.
 struct dec : cl::enable<dec>
 {
     template<typename t_machine>
@@ -47,10 +50,10 @@ struct dec : cl::enable<dec>
 int main()
 {
     count counter;
-    counter.add(2000000); // actually faster ô/
+    counter.add(2000000);
 
-    // uses a std::variant on the stack as a « shared » call frame
+    // Transparent use from the point of view of the machine.
     cl::machine<again, dec> machine(counter);
     while(machine.pending)
-        machine.execute(); // unroll the flattened execution
+        machine.execute();
 }
