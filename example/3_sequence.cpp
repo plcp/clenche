@@ -58,7 +58,7 @@ struct ticktock<tock>
     using motor_type::before;
 
     template<typename t_machine>        // (note that an excplicit operator()
-    void operator()(t_machine& machine) // is the fool-proof way of doing)
+    void operator()(t_machine& machine) // is the fool-proof way to inherit it)
     {
         std::cout << "ticktock<tock>\n";
         motor_type::operator()(machine);
@@ -104,7 +104,7 @@ struct start : cl::enable<start>
     }
 };
 
-// They might be as well included in cl::compose or called via cl::edge
+// They might be as well included in sequences or used in cl::edge
 struct end : cl::enable<end>
 {
     template<typename t_machine>
@@ -124,17 +124,18 @@ int main()
     //  - If a deferred call is prepared during its execution, the sequence
     //    will be overridden and the prepared call will be executed.
     //  - If no deferred call is prepared during the execution of the last
-    //    functor of the sequence, it will executed again.
-    //  - This last behavior can be overriden by explicitly specifying an
+    //    functor of the sequence, it will be executed again.
+    //  - This behavior can be overriden by explicitly specifying an
     //    cl::edge between the last functor and any other functor.
     //
     // The cl::compose thing can be viewed as a way to explicitly give a
     // default behavior when no deferred call is prepared during an execution
-    // other than repeating the last deferred call prepared.
+    // (other than repeating the last deferred call prepared).
     //
     // It builds a chain of cl::edge<foo, bar>, which works by preparing a
     // deferred call to « bar » before executing « foo ». All « by default »
-    // deferred calls made with this method are called without parameters.
+    // deferred calls made with this method are called without parameters
+    // and won't affect pre/post-processing made via before/after.
     //
     using sequence = cl::compose<
         ticktock<tick>,
@@ -142,7 +143,7 @@ int main()
         ticktock<tock>,
         cl::edge<tick, end>>; // (executes tick then jumps to end)
 
-    // Just give the machine the sequence as-is, and it'll work:
+    // Just give the machine the sequence as-is, and it'll work.
     cl::sequence::machine<start, sequence, end> machine;
     while(machine.pending)
         machine.execute();

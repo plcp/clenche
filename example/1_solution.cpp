@@ -37,7 +37,7 @@ int main()
     // In this case, we will trigger again first, which will trigger dec,
     // which will trigger again again, which will trigger dec a second time…etc
     //
-    // Each call to dec or again will shared the same place on the stack, hence
+    // Each call to dec or again will share the same place on the stack, hence
     // enabling us to emulate an « infinite-depth » recursion pattern.
 
     // To give further details of how the machine's API works…
@@ -61,18 +61,18 @@ int main()
     // « execute » calls).
     //
     // Then, each functor will be provided via the « t_machine » template
-    // parameter a reference access to the backend and will be able to issue
+    // parameter a reference access the backend and will be able to issue
     // deferred calls (just as effective executions or any other functionality
-    // offered by the backend).
+    // provided by the backend).
     //
     //
     //
     // The boolean value « machine.pending » only indicates if at least one
-    // « finish » called have been made or not. You may want or not to use it,
+    // « finish » call have been made or not. You may want to use it or not,
     // it just helps building basic main loops for basic scheduling.
     //
     // The order of the functors doesn't matter, only the first one is prepared
-    // by default when the machine starts: taking apart this first functor, no
+    // by default when the machine starts: taking this first functor apart, no
     // other functor will be executed during an « execute » call if it's not
     // prepared as a deferred call before.
     //

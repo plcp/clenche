@@ -28,19 +28,19 @@ struct count;
 //  - each call to « property.add » will use the entry's constructor to add
 //    a new entry to the property.
 //  - each time that a property is executed via a deferred call, it will
-//    execute each operator() of each entry stored.
+//    executes the operator() of each entry stored.
 //  - we can lazily delete entries by tagging them as « deleted », they won't
-//    be executed and will be remove during the next « property.clean » call.
+//    be executed and will be removed during the next « property.clean » call.
 //  - hence, we have to keep entries movable, then we must wrap our references
 //    to don't break our move assignments used during « clean » calls.
-//  - before/after preprocessing is executed only one time before/after the
-//    deferred call to the property as a whole.
-//  - entries are stored on the heap, keep them small to have cache benefits.
+//  - before/after pre/postprocessing is executed only one time before/after
+//    the deferred call to the property.
+//  - entries are stored on the heap, keep them small to get cache benefits.
 //
 
 
 // Tag entries with « cl::property::entry » to enables the machine to
-// transparently constructs the associated property.
+// transparently constructs the associated property at compile-time.
 struct check : cl::property::entry<check>
 {
     using after = count;

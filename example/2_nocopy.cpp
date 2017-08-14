@@ -21,7 +21,7 @@ struct count
 struct again;
 struct dec;
 
-// Enjoy transparent reference & const-references parameter passing,
+// Enjoy transparent reference & const-references parameter passing.
 struct again : cl::enable<again>
 {
     template<typename t_machine>
