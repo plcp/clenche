@@ -74,14 +74,14 @@ namespace cl::property
         }
 
         template<typename t_machine>
-        void operator()(t_machine&, t_args... args)
+        void operator()(t_machine& machine, t_args... args)
         {
             std::for_each(functors.begin(), functors.end(),
                 [&](functor_type& f)
                 {
                     if(!f.deleted)
                     {
-                        f(*this, args...);
+                        f(machine, args...);
                     }});
         }
 

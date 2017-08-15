@@ -50,8 +50,8 @@ struct check : cl::property::entry<check>
         : own_value(own_value), divisor_reference(divisor)
     { }
 
-    template<typename t_property>
-    void operator()(t_property&, size_t target_number)
+    template<typename t_machine>
+    void operator()(t_machine&, size_t target_number)
     {
         isdivisor = divisor_reference.get().divide(target_number, own_value);
     }
