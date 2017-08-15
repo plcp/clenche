@@ -11,8 +11,8 @@ Use the `Makefile` to build the examples:
 
 # Requirements
 
-Any working compiler with a proper support of `std::variant`, `std::visit` and
-`std::apply`.
+Any working compiler with a proper support of `std::variant`, `std::visit`,
+`std::apply` and `std::disjonction`.
 
 Tested with `g++ (GCC) 7.1.1 20170630` and few other compilers.
 
@@ -68,8 +68,8 @@ For now, it provides :
  - Helpers to build compile-time sequences.
  - Property-based traits infrastructure and evaluation.
 
-Proper support for cv-qualifiers are planned along with some fixes to ease the
-access of functors hidden by `cl::edge` and an agent-based infrastructure.
+Proper support for cv-qualifiers are planned along with an agent-based
+infrastructure.
 
 # Contribute
 
