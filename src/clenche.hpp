@@ -79,7 +79,9 @@ namespace cl
                    functor(machine, args...);
 
                     if constexpr(has_after)
-                        after_functor::process(machine, functor);
+                        after_functor::process
+                            // ERROR: before/after process MUST be static
+                            (machine, functor);
                 }
             , callee);
         }
