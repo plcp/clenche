@@ -66,6 +66,7 @@ struct ticktock<tock>
 };
 
 // The same as above, but tick branches to ticktock<tock> half the time.
+// (but does toggle tock's state)
 struct tick : motor<ticktock<tock>>, cl::enable<tick>
 {
     using motor_type = motor<ticktock<tock>>;
@@ -74,6 +75,9 @@ struct tick : motor<ticktock<tock>>, cl::enable<tick>
     template<typename t_machine>
     void operator()(t_machine& machine)
     {
+        auto& functor = machine.template get<tock>();
+        functor.state ^= true;
+
         std::cout << "tick\n";
         motor_type::operator()(machine);
     }

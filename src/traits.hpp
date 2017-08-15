@@ -248,6 +248,58 @@ namespace cl::traits
     // retrieve t_functor's owning the dock point
     template<typename t_functor>
     using dock = typename dock_details<t_functor>::type;
+
+    template<std::size_t t_idx>
+    using idx_details = std::integral_constant<std::size_t, t_idx>;
+
+    template<typename t_target, typename t_pack>
+    struct index_of_details;
+
+    template<typename t_target, typename... t_others>
+    struct index_of_details<t_target, pack<t_target, t_others...>>
+        : idx_details<0>
+    { };
+
+    template<typename t_target, typename t_other, typename... t_others>
+    struct index_of_details<t_target, pack<t_other, t_others...>>
+        : idx_details<index_of_details<t_target, pack<t_others...>>::value + 1>
+    { };
+
+    // get the index of t_target in t_pack
+    template<typename t_target, typename t_pack>
+    constexpr std::size_t index_of()
+    {
+        return index_of_details<t_target, t_pack>::value;
+    }
+
+    template<std::size_t t_idx, typename t_pack>
+    struct get_ith_details;
+
+    template<std::size_t t_idx, typename... t_others>
+    struct get_ith_details<t_idx, pack<t_others...>>
+    {
+        using type =
+            typename std::tuple_element<t_idx, std::tuple<t_others...>>::type;
+    };
+
+    // get the ith item in a pack
+    template<std::size_t t_idx, typename t_pack>
+    using get_ith = typename get_ith_details<t_idx, t_pack>::type;
+
+    template<typename t_target, typename t_pack>
+    struct has_item_details;
+
+    template<typename t_target, typename... t_others>
+    struct has_item_details<t_target, pack<t_others...>>
+        : std::disjunction<std::is_same<t_target, t_others>...>
+    { };
+
+    // returns a boolean to check if t_target is in t_pack
+    template<typename t_target, typename t_pack>
+    constexpr bool has_item()
+    {
+        return has_item_details<t_target, t_pack>::value;
+    }
 }
 #endif
 

@@ -169,7 +169,8 @@ namespace cl::sequence
         t_functor,
         t_next,
         cl::callee<t_args...>>
-        : details::wrap_functor<
+        : details::unhide,
+          details::wrap_functor<
             cl::property::traits::fix_entry<t_functor>,
             t_next,
             cl::callee<t_args...>>,
@@ -179,10 +180,9 @@ namespace cl::sequence
             t_next,
             cl::callee<t_args...>>>
     {
+        using hidden_functor = cl::property::traits::fix_entry<t_functor>;
         using functor_type = details::wrap_functor<
-            cl::property::traits::fix_entry<t_functor>,
-            t_next,
-            cl::callee<t_args...>>;
+            hidden_functor, t_next, cl::callee<t_args...>>;
         using before = typename functor_type::before;
         using after = typename functor_type::after;
         using tag = typename functor_type::tag;

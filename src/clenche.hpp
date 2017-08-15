@@ -109,7 +109,8 @@ namespace cl
         template<typename t_functor>
         t_functor& get()
         {
-            return wrapper_type<t_functor>::get();
+            return wrapper_type<t_functor>
+                ::get(); // ERROR: Unable to get functor, is it enabled ?
         }
     };
 

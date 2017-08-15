@@ -65,7 +65,7 @@ struct check : cl::property::entry<check>
 struct count : cl::enable<count>
 {
     template<typename t_machine, typename t_functor>
-    void static process(t_machine& machine, t_functor& property)
+    void static process(t_machine&, t_functor& property)
     {
         bool isprime = true;
         for(auto& f : property.functors) // (iterate on each property entry)
@@ -76,8 +76,6 @@ struct count : cl::enable<count>
             std::cout << "It's a prime !\n\n";
         else
             std::cout << "It's not a prime !\n\n";
-
-        machine.template prepare<ask>();
     }
 };
 
@@ -113,7 +111,7 @@ struct ask : cl::enable<ask>
 
 int main()
 {
-    cl::property::machine<ask, check> machine;
+    cl::property::machine<ask, cl::edge<check, ask>> machine;
     while(machine.pending)
         machine.execute();
 }
