@@ -158,7 +158,7 @@ namespace cl
         template<typename t_functor>
         t_functor& get()
         {
-            return dispatcher.get<t_functor>();
+            return dispatcher.template get<t_functor>();
         }
 
         bool pending = true;
