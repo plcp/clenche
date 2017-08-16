@@ -58,9 +58,9 @@ namespace cl::property
         }
 
         // clean deleted entries and tag herself as clean
-        void clean()
+        void clean(bool enforce = false)
         {
-            if(dirty)
+            if(dirty || enforce)
             {
                 dirty = false;
                 functors.erase(
