@@ -1,5 +1,5 @@
 # clenche
-Low-cost clenche machine, provides deferred calls and dynamic control flow.
+Fast meta-template library to build flat control flows.
 
 # Quick setup
 Use the `Makefile` to build the examples:
